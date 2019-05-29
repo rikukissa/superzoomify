@@ -7,7 +7,60 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+@keyframes superzoom {
+  0% {
+    transform: scale(1, 1);
+  }
+  20% {
+    transform: scale(3, 3);
+  }
+  30% {
+    transform: scale(5, 5);
+  }
+  100% {
+    transform: scale(5, 5);
+  }
+}
+
+html,
+body,
+#root,
+.App,
+.layout {
+  height: 100%;
+}
+
+.content {
+  width: 800px;
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.box {
+  padding: 2em;
+  background: #fff;
+}
+
+.preview-container {
+  overflow: hidden;
+  position: relative;
+}
+.preview {
+  background-size: 100% 100%;
+  animation: superzoom 7s infinite;
+}
+
+.focus {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  margin-top: -15px;
+  background: rgba(34, 177, 12, 0.5);
+  border: 2px solid rgba(34, 177, 12, 1);
+  box-shadow: inset 1px 1px 1px rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  z-index: 1;
 }
