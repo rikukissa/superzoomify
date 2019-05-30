@@ -32,6 +32,10 @@ body,
   position: relative;
   cursor: crosshair;
 }
+.preview-actions {
+  display: flex;
+  justify-content: space-between;
+}
 
 .preview {
   width: 100%;

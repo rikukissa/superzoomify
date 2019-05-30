@@ -1,9 +1,25 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import useDebounce from "react-use/lib/useDebounce";
 import useLocalStorage from "react-use/lib/useLocalStorage";
-import { Layout, Icon, Input, Tooltip } from "antd";
+import { Layout, Icon, Input, Tooltip, Button } from "antd";
+import ButtonGroup from "antd/lib/button/button-group";
+import {
+  startRecording,
+  CanvasWithCaptureStream,
+  AudioWithCaptureStream
+} from "./recording";
+import dunSound from "./assets/dun-dun-dun.mp3";
 
 const { Content } = Layout;
+
+function download(uri: string) {
+  const link = document.createElement("a");
+  link.download = "superzoom";
+  link.href = uri;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 function getBezierXY(
   t: number,
@@ -30,6 +46,11 @@ interface IFocusPoint {
   x: number;
   y: number;
 }
+interface IDimensions {
+  width: number;
+  height: number;
+}
+
 const timeSlice = (
   slice: number,
   currentFrame: number,
@@ -43,52 +64,108 @@ const timeSlice = (
     )
   );
 
+function drawImage(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  canvasDimensions: IDimensions
+) {
+  ctx.drawImage(
+    image,
+    0,
+    0,
+    image.width,
+    image.height,
+    0,
+    0,
+    canvasDimensions.width,
+    canvasDimensions.height
+  );
+}
+
 function superzoom(
   ctx: CanvasRenderingContext2D,
-  frame: number,
-  focusPoint: IFocusPoint
+  image: HTMLImageElement,
+  focusPoint: IFocusPoint,
+  canvasDimensions: IDimensions
 ) {
+  let cancelled = false;
   const animationLenght = 150; // @todo frames, turn to seconds
-  const currentFrame = frame % animationLenght;
 
-  // https://cubic-bezier.com/
-  const curve = [0, 1.06, 0.74, 1];
+  function render(frame: number) {
+    const currentFrame = frame % animationLenght;
 
-  const scale =
-    1 +
-    getBezierXY(
-      timeSlice(0, currentFrame, animationLenght * 0.5),
-      0,
-      0,
-      1,
-      1,
-      curve
-    ).y +
-    getBezierXY(
-      timeSlice(1, currentFrame, animationLenght * 0.5),
-      0,
-      0,
-      1,
-      1,
-      curve
-    ).y +
-    getBezierXY(
-      timeSlice(2, currentFrame, animationLenght * 0.5),
-      0,
-      0,
-      1,
-      1,
-      curve
-    ).y;
+    ctx.save();
 
-  ctx.translate(focusPoint!.x, focusPoint!.y);
-  ctx.scale(scale, scale);
-  ctx.translate(-focusPoint!.x, -focusPoint!.y);
+    // https://cubic-bezier.com/
+    const curve = [0, 1.06, 0.74, 1];
+
+    const scale =
+      1 +
+      getBezierXY(
+        timeSlice(0, currentFrame, animationLenght * 0.5),
+        0,
+        0,
+        1,
+        1,
+        curve
+      ).y +
+      getBezierXY(
+        timeSlice(1, currentFrame, animationLenght * 0.5),
+        0,
+        0,
+        1,
+        1,
+        curve
+      ).y +
+      getBezierXY(
+        timeSlice(2, currentFrame, animationLenght * 0.5),
+        0,
+        0,
+        1,
+        1,
+        curve
+      ).y;
+
+    ctx.translate(focusPoint!.x, focusPoint!.y);
+    ctx.scale(scale, scale);
+    ctx.translate(-focusPoint!.x, -focusPoint!.y);
+
+    drawImage(ctx, image, canvasDimensions);
+    ctx.restore();
+  }
+
+  const run = () => {
+    return new Promise((resolve, reject) => {
+      const loop = (frame: number = 0) => {
+        if (frame > animationLenght || cancelled) {
+          return resolve();
+        }
+        render(frame);
+        window.requestAnimationFrame(() => loop(frame + 1));
+      };
+      loop();
+    });
+  };
+
+  const loop = async () => {
+    await run();
+    if (!cancelled) {
+      loop();
+    }
+  };
+
+  return {
+    run,
+    loop,
+    cancel: () => {
+      cancelled = true;
+    }
+  };
 }
 
 function getImage(base64: string) {
   const image = new Image();
-
+  image.crossOrigin = "anonymous";
   return new Promise<HTMLImageElement>((resolve, reject) => {
     image.onload = () => resolve(image);
     image.onerror = reject;
@@ -96,13 +173,23 @@ function getImage(base64: string) {
   });
 }
 
-function Canvas({ image }: { image: HTMLImageElement }) {
+function canCaptureStream($canvas: HTMLCanvasElement) {
+  return Boolean(($canvas as any).captureStream);
+}
+
+function Canvas({
+  image,
+  onPlay,
+  onVideoAvailable
+}: {
+  image: HTMLImageElement;
+  onPlay: () => void;
+  onVideoAvailable: (url: string) => void;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const audio = useRef<HTMLAudioElement>(null);
   const [focusPoint, setFocusPoint] = useState<null | IFocusPoint>(null);
-  const [canvasDimensions, setCanvasDimensions] = useState<{
-    width: number;
-    height: number;
-  }>({
+  const [canvasDimensions, setCanvasDimensions] = useState<IDimensions>({
     width: 0,
     height: 0
   });
@@ -120,47 +207,43 @@ function Canvas({ image }: { image: HTMLImageElement }) {
       return;
     }
 
-    let running = true;
     const ctx = $canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
 
-    function drawImage() {
-      ctx!.drawImage(
-        image,
-        0,
-        0,
-        image.width,
-        image.height,
-        0,
-        0,
-        canvasDimensions.width,
-        canvasDimensions.height
+    drawImage(ctx!, image, canvasDimensions);
+
+    if (!focusPoint) {
+      return;
+    }
+
+    let recorder: ReturnType<typeof startRecording> | undefined;
+    onPlay();
+    if (canCaptureStream($canvas) && audio.current) {
+      recorder = startRecording(
+        $canvas as CanvasWithCaptureStream,
+        audio.current as AudioWithCaptureStream
       );
     }
+    const animation = superzoom(ctx, image, focusPoint, canvasDimensions);
 
-    function loop(frame: number = 0) {
-      if (!ctx || !$canvas || !running) {
-        return;
+    async function animate() {
+      await animation.run();
+      if (recorder) {
+        const videoObjectUrl = await recorder.stop();
+        onVideoAvailable(videoObjectUrl);
       }
-
-      ctx.save();
-
-      superzoom(ctx, frame, focusPoint!);
-
-      drawImage();
-      ctx.restore();
-      window.requestAnimationFrame(() => loop(frame + 1));
+      animation.loop();
     }
 
-    if (focusPoint) {
-      loop();
-    } else {
-      drawImage();
-    }
+    animate();
 
     return () => {
-      running = false;
+      animation.cancel();
     };
-  }, [image, canvas, focusPoint, canvasDimensions]);
+    // eslint-disable-next-line
+  }, [image, canvas, focusPoint, canvasDimensions, audio]);
 
   useEffect(() => {
     if (!canvas.current) {
@@ -177,12 +260,16 @@ function Canvas({ image }: { image: HTMLImageElement }) {
   return (
     <div onClick={setFocus} className="preview-container">
       <canvas
+        origin-clean="false"
         style={{
           height: canvasDimensions.height
         }}
         className="preview"
         ref={canvas}
       />
+      <audio muted ref={audio}>
+        <source src={dunSound} type="audio/mpeg" />
+      </audio>
     </div>
   );
 }
@@ -191,6 +278,8 @@ const App: React.FC = () => {
   const [imageUrl, setImageUrl] = useLocalStorage<string>("superzoomify");
 
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [video, setVideo] = useState<string | null>(null);
+  const [playing, setPlaying] = useState<boolean>(false);
 
   useDebounce(
     () => {
@@ -212,7 +301,30 @@ const App: React.FC = () => {
       <Layout className="layout">
         <Content style={{ padding: "0 1em" }} className="content">
           <div className="box">
-            {image && <Canvas image={image} />}
+            {image && (
+              <Canvas
+                onVideoAvailable={setVideo}
+                onPlay={() => setPlaying(true)}
+                image={image}
+              />
+            )}
+            {image && (
+              <div className="preview-actions">
+                <ButtonGroup>
+                  {!playing && <Button disabled icon="caret-right" />}
+                  {playing && <Button icon="pause" />}
+                </ButtonGroup>
+                <ButtonGroup>
+                  <Button
+                    onClick={() => video && download(video)}
+                    disabled={!video}
+                    type="primary"
+                    icon="download"
+                  />
+                </ButtonGroup>
+              </div>
+            )}
+
             {!image && (
               <Input
                 onChange={event => setImageUrl(event.target.value)}
