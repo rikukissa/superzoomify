@@ -29,9 +29,7 @@ export function startRecording(
       return new Promise<string>((resolve, reject) => {
         rec.onerror = reject;
         rec.onstop = () => {
-          resolve(
-            URL.createObjectURL(new Blob(chunks, { type: "video/webm" }))
-          );
+          resolve(URL.createObjectURL(new Blob(chunks, { type: "video/mp4" })));
         };
         rec.stop();
       });
