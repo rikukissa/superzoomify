@@ -167,13 +167,13 @@ function superzoom(
   };
 }
 
-function getImage(base64: string) {
+function getImage(imageUrl: string) {
   const image = new Image();
   image.crossOrigin = "anonymous";
   return new Promise<HTMLImageElement>((resolve, reject) => {
     image.onload = () => resolve(image);
     image.onerror = reject;
-    image.src = base64;
+    image.src = imageUrl;
   });
 }
 
@@ -292,7 +292,9 @@ const App: React.FC = () => {
         if (!imageUrl) {
           return;
         }
-        const file = await getImage(imageUrl);
+        const file = await getImage(imageUrl).catch(err =>
+          getImage(`https://cors-anywhere.herokuapp.com/${imageUrl}`)
+        );
         setImage(file);
       }
       loadImage();
