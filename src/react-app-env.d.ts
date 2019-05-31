@@ -1,6 +1,8 @@
 /// <reference types="react-scripts" />
 
 declare module "*.mp3";
+declare module "gif.js";
+
 declare interface MediaRecorderErrorEvent extends Event {
   name: string;
 }
@@ -34,7 +36,7 @@ declare class MediaRecorder extends EventTarget {
   onstart: () => void;
   onstop: () => void;
 
-  constructor(stream: MediaStream);
+  constructor(stream: MediaStream, options?: any);
 
   start();
 

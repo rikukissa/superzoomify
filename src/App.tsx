@@ -4,9 +4,11 @@ import useLocalStorage from "react-use/lib/useLocalStorage";
 import { Layout, Icon, Input, Tooltip, Button } from "antd";
 import ButtonGroup from "antd/lib/button/button-group";
 import {
-  startRecording,
+  recordWebM,
   CanvasWithCaptureStream,
-  AudioWithCaptureStream
+  AudioWithCaptureStream,
+  recordGIF,
+  Recorder
 } from "./recording";
 import dunSound from "./assets/dun-dun-dun.mp3";
 
@@ -89,7 +91,9 @@ function superzoom(
   canvasDimensions: IDimensions
 ) {
   let cancelled = false;
-  const animationLenght = 150; // @todo frames, turn to seconds
+  const animationLenght = 200; // @todo frames, turn to seconds
+  const zoomStartFrame = 50;
+  const zoomEndFrame = animationLenght / 2;
 
   function render(frame: number) {
     const currentFrame = frame % animationLenght;
@@ -102,7 +106,7 @@ function superzoom(
     const scale =
       1 +
       getBezierXY(
-        timeSlice(0, currentFrame, animationLenght * 0.5),
+        timeSlice(0, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
         0,
         0,
         1,
@@ -110,7 +114,7 @@ function superzoom(
         curve
       ).y +
       getBezierXY(
-        timeSlice(1, currentFrame, animationLenght * 0.5),
+        timeSlice(1, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
         0,
         0,
         1,
@@ -118,7 +122,7 @@ function superzoom(
         curve
       ).y +
       getBezierXY(
-        timeSlice(2, currentFrame, animationLenght * 0.5),
+        timeSlice(2, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
         0,
         0,
         1,
@@ -218,13 +222,14 @@ function Canvas({
       return;
     }
 
-    let recorder: ReturnType<typeof startRecording> | undefined;
+    let recorder: Recorder;
     onPlay();
     if (canCaptureStream($canvas) && audio.current) {
-      recorder = startRecording(
-        $canvas as CanvasWithCaptureStream,
-        audio.current as AudioWithCaptureStream
-      );
+      recorder = recordGIF($canvas as CanvasWithCaptureStream);
+      // recorder = recordWebM(
+      //   $canvas as CanvasWithCaptureStream,
+      //   audio.current as AudioWithCaptureStream
+      // );
     }
     const animation = superzoom(ctx, image, focusPoint, canvasDimensions);
 
