@@ -40,16 +40,11 @@ function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
 }
 
-function Canvas({
-  image,
-  playing
-}: {
-  playing: boolean;
-  image: HTMLImageElement;
-}) {
+function Canvas({ image }: { image: HTMLImageElement }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const audio = useRef<HTMLAudioElement>(null);
   const [focusPoint, setFocusPoint] = useState<null | IFocusPoint>(null);
+  const [muted, setMuted] = useLocalStorage<boolean>("muted", true);
   const [animation, setAnimation] = useState<null | ReturnType<
     typeof superzoom
   >>(null);
@@ -75,7 +70,7 @@ function Canvas({
       audio.current as AudioWithCaptureStream
     );
     recorder.start();
-    await animation.start();
+    await animation.start(focusPoint!);
     const objectUrl = await recorder.stop();
     download(objectUrl);
   };
@@ -87,10 +82,35 @@ function Canvas({
     animation.cancel();
     const recorder = recordGIF(canvas.current as CanvasWithCaptureStream);
     recorder.start();
-    await animation.start();
+    await animation.start(focusPoint!);
     const objectUrl = await recorder.stop();
     download(objectUrl);
   };
+
+  useEffect(() => {
+    const ctx = canvas.current!.getContext("2d")!;
+    if (!focusPoint) {
+      return;
+    }
+    audio.current!.currentTime = 0;
+    audio.current!.play();
+
+    const nextAnimation = animation || superzoom(ctx, image, canvasDimensions);
+    if (!animation) {
+      setAnimation(nextAnimation);
+    }
+
+    nextAnimation.start(focusPoint).then(() => {
+      drawImage(ctx, image, canvasDimensions);
+      audio.current!.pause();
+    });
+
+    return () => {
+      if (animation) {
+        animation.cancel();
+      }
+    };
+  }, [focusPoint]);
 
   useEffect(() => {
     const $canvas = canvas.current;
@@ -104,25 +124,7 @@ function Canvas({
     }
 
     drawImage(ctx, image, canvasDimensions);
-
-    if (animation && !playing) {
-      animation.cancel();
-      setAnimation(null);
-      return;
-    }
-
-    if (!animation && playing && focusPoint) {
-      const nextAnimation = superzoom(ctx, image, focusPoint, canvasDimensions);
-      setAnimation(nextAnimation);
-      nextAnimation.loop();
-      return;
-    }
-    return () => {
-      if (animation) {
-        animation.cancel();
-      }
-    };
-  }, [image, canvas, focusPoint, canvasDimensions, animation]);
+  }, [image, canvas, canvasDimensions]);
 
   /*
    * Set canvas dimensions
@@ -150,19 +152,20 @@ function Canvas({
           className="preview"
           ref={canvas}
         />
-        <audio ref={audio}>
+        <audio muted={muted} ref={audio}>
           <source src={dunSound} type="audio/mpeg" />
         </audio>
       </div>
       <div className="preview-actions">
         <ButtonGroup>
-          {!playing && <Button disabled icon="caret-right" />}
-          {playing && <Button icon="pause" />}
+          <Button onClick={() => setMuted(!muted)}>
+            <Icon type="sound" theme={muted ? "outlined" : "filled"} />
+          </Button>
         </ButtonGroup>
         <ButtonGroup>
           <Button
             onClick={() => downloadAsWebM()}
-            disabled={!focusPoint}
+            disabled={!focusPoint || !canCaptureStream(canvas.current!)}
             type="primary"
             icon="download"
           >
@@ -184,10 +187,7 @@ function Canvas({
 
 const App: React.FC = () => {
   const [imageUrl, setImageUrl] = useLocalStorage<string>("superzoomify");
-
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [video, setVideo] = useState<string | null>(null);
-  const [playing, setPlaying] = useState<boolean>(false);
 
   useDebounce(
     () => {
@@ -211,7 +211,7 @@ const App: React.FC = () => {
       <Layout className="layout">
         <Content style={{ padding: "0 1em" }} className="content">
           <div className="box">
-            {image && <Canvas playing={true} image={image} />}
+            {image && <Canvas image={image} />}
 
             {!image && (
               <div>

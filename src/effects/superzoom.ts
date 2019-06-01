@@ -1,123 +1,60 @@
+import anime from "animejs";
 import { IDimensions, drawImage } from "../canvas";
 
-function timeSlice(
-  slice: number,
-  currentFrame: number,
-  animationLenght: number
-) {
-  return Math.min(
-    1,
-    Math.max(
-      0,
-      (currentFrame - (animationLenght / 3) * slice) / (animationLenght / 3)
-    )
-  );
-}
-
-function getBezierXY(
-  t: number,
-  sx: number,
-  sy: number,
-  ex: number,
-  ey: number,
-  [cp1x, cp1y, cp2x, cp2y]: number[]
-) {
-  return {
-    x:
-      Math.pow(1 - t, 3) * sx +
-      3 * t * Math.pow(1 - t, 2) * cp1x +
-      3 * t * t * (1 - t) * cp2x +
-      t * t * t * ex,
-    y:
-      Math.pow(1 - t, 3) * sy +
-      3 * t * Math.pow(1 - t, 2) * cp1y +
-      3 * t * t * (1 - t) * cp2y +
-      t * t * t * ey
-  };
-}
 export interface IFocusPoint {
   x: number;
   y: number;
 }
+
 export function superzoom(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
-  focusPoint: IFocusPoint,
   canvasDimensions: IDimensions
 ) {
-  let cancelled = false;
-  let animationFrameHandle: number;
-  const animationLenght = 200; // @todo frames, turn to seconds
-  const zoomStartFrame = 50;
-  const zoomEndFrame = animationLenght / 2;
+  const animatedValues = {
+    rotation: 0,
+    scale: 1
+  };
 
-  function render(frame: number) {
-    const currentFrame = frame % animationLenght;
+  const animation = anime({
+    targets: animatedValues,
+    keyframes: [
+      { scale: 1.5, rotation: Math.PI / 6, delay: 100, duration: 400 },
+      { scale: 2, rotation: -Math.PI / 6, duration: 400 },
+      { scale: 3, rotation: Math.PI / 6, duration: 600 },
+      { scale: 3, duration: 2000 }
+    ],
+    easing: "easeOutElastic(1, .8)",
+    autoplay: false
+  });
 
+  function render(focusPoint: IFocusPoint) {
     ctx.save();
-
-    // https://cubic-bezier.com/
-    const curve = [0, 1.06, 0.74, 1];
-
-    const scale =
-      1 +
-      getBezierXY(
-        timeSlice(0, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
-        0,
-        0,
-        1,
-        1,
-        curve
-      ).y +
-      getBezierXY(
-        timeSlice(1, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
-        0,
-        0,
-        1,
-        1,
-        curve
-      ).y +
-      getBezierXY(
-        timeSlice(2, Math.max(0, currentFrame - zoomStartFrame), zoomEndFrame),
-        0,
-        0,
-        1,
-        1,
-        curve
-      ).y;
-
-    ctx.translate(focusPoint!.x, focusPoint!.y);
-    ctx.scale(scale, scale);
-    ctx.translate(-focusPoint!.x, -focusPoint!.y);
-
+    ctx.translate(focusPoint.x, focusPoint.y);
+    ctx.scale(animatedValues.scale, animatedValues.scale);
+    ctx.rotate(animatedValues.rotation);
+    ctx.translate(-focusPoint.x, -focusPoint.y);
     drawImage(ctx, image, canvasDimensions);
     ctx.restore();
   }
 
-  const run = () => {
+  const run = (focusPoint: IFocusPoint) => {
     return new Promise((resolve, reject) => {
-      const loop = (frame: number = 0) => {
-        if (frame > animationLenght || cancelled) {
-          return resolve();
-        }
-        render(frame);
-        animationFrameHandle = window.requestAnimationFrame(() =>
-          loop(frame + 1)
-        );
-      };
-      loop();
+      animation.update = () => render(focusPoint);
+      animation.complete = resolve;
+      animation.restart();
     });
   };
 
-  const start = () => {
-    cancelled = false;
-    return run();
+  const start = (focusPoint: IFocusPoint) => {
+    return run(focusPoint);
   };
 
-  const loop = async () => {
-    await run();
-    if (!cancelled) {
-      loop();
+  const loop = async (focusPoint: IFocusPoint) => {
+    await run(focusPoint);
+
+    if (!animation.paused) {
+      loop(focusPoint);
     }
   };
 
@@ -125,8 +62,7 @@ export function superzoom(
     start,
     loop,
     cancel: () => {
-      window.cancelAnimationFrame(animationFrameHandle);
-      cancelled = true;
+      animation.pause();
     }
   };
 }
