@@ -90,8 +90,8 @@ export function recordGIF(canvas: CanvasWithCaptureStream): Recorder {
           offscreenCanvasWidth,
           offscreenCanvasHeight
         );
-        gif.addFrame(offscreenCtx, { copy: true, delay: 1000 / 10 });
-      }, 1000 / 10);
+        gif.addFrame(offscreenCtx, { copy: true, delay: 1000 / 20 });
+      }, 1000 / 20);
     },
     stop: () => {
       window.clearInterval(interval);

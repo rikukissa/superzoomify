@@ -1,11 +1,10 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import useDebounce from "react-use/lib/useDebounce";
 import useLocalStorage from "react-use/lib/useLocalStorage";
-import { Layout, Icon, Input, Tooltip, Button } from "antd";
-import ButtonGroup from "antd/lib/button/button-group";
+import { Layout, Icon, Input, Tooltip, Button, Dropdown, Menu } from "antd";
 
 import dunSound from "./assets/dun-dun-dun.mp3";
-import Title from "antd/lib/typography/Title";
+
 import { IFocusPoint, superzoom } from "./effects/superzoom";
 import { IDimensions, drawImage } from "./canvas";
 import {
@@ -14,6 +13,7 @@ import {
   AudioWithCaptureStream,
   recordGIF
 } from "./recording";
+import Title from "antd/lib/typography/Title";
 
 const { Content } = Layout;
 
@@ -40,10 +40,21 @@ function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
 }
 
-function Canvas({ image }: { image: HTMLImageElement }) {
+function Canvas({
+  image,
+  example,
+  focusPoint: userDefinedFocusPoint
+}: {
+  image: HTMLImageElement;
+  example?: boolean;
+  focusPoint?: IFocusPoint;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const audio = useRef<HTMLAudioElement>(null);
-  const [focusPoint, setFocusPoint] = useState<null | IFocusPoint>(null);
+  const [focusPoint = userDefinedFocusPoint, setFocusPoint] = useState<
+    IFocusPoint | undefined
+  >(userDefinedFocusPoint);
+
   const [muted, setMuted] = useLocalStorage<boolean>("muted", true);
   const [animation, setAnimation] = useState<null | ReturnType<
     typeof superzoom
@@ -53,10 +64,12 @@ function Canvas({ image }: { image: HTMLImageElement }) {
     height: 0
   });
 
-  const setFocus = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+  const setFocus = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    const { top, left } = event.currentTarget.getBoundingClientRect();
+
     setFocusPoint({
-      x: event.pageX - event.currentTarget.offsetLeft,
-      y: event.pageY - event.currentTarget.offsetTop
+      x: (event.pageX - left) / event.currentTarget.offsetWidth,
+      y: (event.pageY - top) / event.currentTarget.offsetHeight
     });
   }, []);
 
@@ -87,31 +100,56 @@ function Canvas({ image }: { image: HTMLImageElement }) {
     download(objectUrl);
   };
 
+  /*
+   * Create animation
+   */
+
   useEffect(() => {
-    const ctx = canvas.current!.getContext("2d")!;
-    if (!focusPoint) {
+    if (animation || !canvas.current) {
       return;
     }
-    audio.current!.currentTime = 0;
-    audio.current!.play();
+    const ctx = canvas.current.getContext("2d")!;
 
-    const nextAnimation = animation || superzoom(ctx, image, canvasDimensions);
-    if (!animation) {
-      setAnimation(nextAnimation);
+    setAnimation(superzoom(ctx, image, canvasDimensions));
+  }, [animation, canvas, image, canvasDimensions]);
+
+  /*
+   * Play animation
+   */
+
+  useEffect(() => {
+    if (!focusPoint || !audio.current || !canvas.current || !animation) {
+      return;
     }
+    const ctx = canvas.current.getContext("2d")!;
 
-    nextAnimation.start(focusPoint).then(() => {
+    async function play() {
+      const $audio = audio.current!;
+      try {
+        $audio.currentTime = 0;
+        await $audio.play();
+      } catch (error) {
+        console.log(error);
+      }
+      try {
+        await animation!.start(focusPoint!);
+      } catch (error) {
+        console.log(error);
+      }
       drawImage(ctx, image, canvasDimensions);
-      audio.current!.pause();
-    });
-
+      $audio.pause();
+    }
+    play();
     return () => {
       if (animation) {
         animation.cancel();
       }
     };
-  }, [focusPoint]);
+  }, [focusPoint, animation, canvasDimensions, image, audio]);
 
+  /*
+   * Draw initial image
+   */
   useEffect(() => {
     const $canvas = canvas.current;
     if (!$canvas) {
@@ -133,20 +171,25 @@ function Canvas({ image }: { image: HTMLImageElement }) {
     if (!canvas.current) {
       return;
     }
+    canvas.current.width = image.width;
+    canvas.current.height = image.height;
+
     const aspectRatio = image.height / image.width;
-    const canvasWidth = canvas.current.offsetWidth;
+
+    const canvasWidth = canvas.current.parentElement!.offsetWidth;
     const canvasHeight = canvasWidth * aspectRatio;
+
     setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-    canvas.current.width = canvas.current.offsetWidth;
-    canvas.current.height = canvasHeight;
   }, [image, canvas]);
 
   return (
-    <div>
-      <div onClick={setFocus} className="preview-container">
+    <div className="canvas">
+      <div className="preview-container">
         <canvas
+          onClick={setFocus}
           origin-clean="false"
           style={{
+            width: canvasDimensions.width,
             height: canvasDimensions.height
           }}
           className="preview"
@@ -155,39 +198,68 @@ function Canvas({ image }: { image: HTMLImageElement }) {
         <audio muted={muted} ref={audio}>
           <source src={dunSound} type="audio/mpeg" />
         </audio>
-      </div>
-      <div className="preview-actions">
-        <ButtonGroup>
-          <Button onClick={() => setMuted(!muted)}>
+        <div className="preview-actions">
+          <Button className="editor-action" onClick={() => setMuted(!muted)}>
             <Icon type="sound" theme={muted ? "outlined" : "filled"} />
           </Button>
-        </ButtonGroup>
-        <ButtonGroup>
-          <Button
-            onClick={() => downloadAsWebM()}
-            disabled={!focusPoint || !canCaptureStream(canvas.current!)}
-            type="primary"
-            icon="download"
-          >
-            WebM
-          </Button>
-          <Button
-            onClick={() => downloadAsGif()}
-            disabled={!focusPoint}
-            type="primary"
-            icon="download"
-          >
-            Gif
-          </Button>
-        </ButtonGroup>
+
+          {!example && (
+            <Dropdown
+              overlay={
+                <Menu>
+                  <Menu.Item key="2" onClick={() => downloadAsGif()}>
+                    GIF
+                  </Menu.Item>
+                  <Menu.Item
+                    key="1"
+                    onClick={() => downloadAsWebM()}
+                    disabled={
+                      !canvas.current || !canCaptureStream(canvas.current)
+                    }
+                  >
+                    WebM
+                  </Menu.Item>
+                </Menu>
+              }
+            >
+              <Button className="editor-action" disabled={!focusPoint}>
+                <Icon type="download" />
+              </Button>
+            </Dropdown>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 const App: React.FC = () => {
-  const [imageUrl, setImageUrl] = useLocalStorage<string>("superzoomify");
+  const [imageUrl, setImageUrl] = useLocalStorage<string | null>(
+    "superzoomify",
+    null
+  );
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [focusPoint, setFocusPoint] = useState<IFocusPoint>();
+  const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
+    null
+  );
+
+  function clearImage() {
+    setImageUrl(null);
+    setImage(null);
+  }
+
+  useEffect(() => {
+    async function loadPreviewImage() {
+      setPreviewImage(
+        await getImage(
+          "https://cors-anywhere.herokuapp.com/https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg"
+        )
+      );
+      window.setTimeout(() => setFocusPoint({ x: 0.4, y: 0.4 }), 2000);
+    }
+    loadPreviewImage();
+  }, []);
 
   useDebounce(
     () => {
@@ -209,33 +281,52 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <Layout className="layout">
-        <Content style={{ padding: "0 1em" }} className="content">
-          <div className="box">
-            {image && <Canvas image={image} />}
-
-            {!image && (
-              <div>
-                <Title>Superzoomify</Title>
-                <Input
-                  onChange={event => setImageUrl(event.target.value)}
-                  placeholder="Enter an image url"
-                  className="input"
-                  prefix={
-                    <Icon type="user" style={{ color: "rgba(0,0,0,.25)" }} />
-                  }
-                  suffix={
-                    <Tooltip title="Extra information">
-                      <Icon
-                        type="info-circle"
-                        style={{ color: "rgba(0,0,0,.45)" }}
-                      />
-                    </Tooltip>
-                  }
-                />
+        {!image && (
+          <Content className="content content--index">
+            <div className="modal">
+              <Title className="title">dun dun dun</Title>
+              <div className="modal-example">
+                {previewImage && (
+                  <Canvas
+                    example={true}
+                    image={previewImage}
+                    focusPoint={focusPoint}
+                  />
+                )}
               </div>
-            )}
-          </div>
-        </Content>
+              <Input
+                onChange={event => setImageUrl(event.target.value)}
+                placeholder="Enter image URL"
+                className="input"
+                suffix={
+                  <Tooltip title="Extra information">
+                    <Icon
+                      type="info-circle"
+                      style={{ color: "rgba(0,0,0,.45)" }}
+                    />
+                  </Tooltip>
+                }
+              />
+              <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                Pellentesque non elit et felis imperdiet ultricies nec quis
+                felis. Cras id purus quis leo rhoncus blandit. Morbi feugiat
+                justo ac placerat suscipit.
+              </p>
+            </div>
+          </Content>
+        )}
+
+        {image && (
+          <Content className="content">
+            <Canvas image={image} />
+            <div className="box">
+              <Button className="button" icon="arrow-left" onClick={clearImage}>
+                Use another image
+              </Button>
+            </div>
+          </Content>
+        )}
       </Layout>
     </div>
   );

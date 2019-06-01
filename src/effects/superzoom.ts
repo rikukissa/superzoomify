@@ -30,10 +30,17 @@ export function superzoom(
 
   function render(focusPoint: IFocusPoint) {
     ctx.save();
-    ctx.translate(focusPoint.x, focusPoint.y);
+
+    ctx.translate(
+      ctx.canvas.width * focusPoint.x,
+      ctx.canvas.height * focusPoint.y
+    );
     ctx.scale(animatedValues.scale, animatedValues.scale);
     ctx.rotate(animatedValues.rotation);
-    ctx.translate(-focusPoint.x, -focusPoint.y);
+    ctx.translate(
+      ctx.canvas.width * focusPoint.x * -1,
+      ctx.canvas.height * focusPoint.y * -1
+    );
     drawImage(ctx, image, canvasDimensions);
     ctx.restore();
   }

@@ -16,7 +16,7 @@ export function drawImage(
     image.height,
     0,
     0,
-    canvasDimensions.width,
-    canvasDimensions.height
+    image.width,
+    image.height
   );
 }
