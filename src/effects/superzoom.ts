@@ -26,7 +26,7 @@ export function superzoom(
         scale: 1.5,
         textX: 0,
         textY: 0.03,
-        textSize: 20,
+        textSize: 40,
         rotation: Math.PI / 6,
         delay: 100,
         duration: 400
@@ -36,7 +36,7 @@ export function superzoom(
         scale: 2,
         textX: 1,
         textY: 0.5,
-        textSize: 30,
+        textSize: 50,
         rotation: -Math.PI / 6,
         duration: 400
       },
@@ -45,11 +45,11 @@ export function superzoom(
         scale: 3,
         textX: 0,
         textY: 1,
-        textSize: 40,
+        textSize: 60,
         rotation: Math.PI / 6,
         duration: 600
       },
-      { scale: 3, textX: 0, textY: 1, textSize: 40, duration: 2000 }
+      { scale: 3, textX: 0, textY: 1, textSize: 60, duration: 2000 }
     ],
     easing: "easeOutElastic(1, .8)",
     autoplay: false
@@ -75,7 +75,7 @@ export function superzoom(
 
     ctx.fillText(
       "DUN",
-      40 + (ctx.canvas.width - 150) * animatedValues.textX,
+      40 + (ctx.canvas.width - 250) * animatedValues.textX,
       40 + (ctx.canvas.height - 80) * animatedValues.textY
     );
   }

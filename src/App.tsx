@@ -1,7 +1,16 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import useDebounce from "react-use/lib/useDebounce";
 import useLocalStorage from "react-use/lib/useLocalStorage";
-import { Layout, Icon, Input, Tooltip, Button, Dropdown, Menu } from "antd";
+import {
+  Layout,
+  Icon,
+  Input,
+  Tooltip,
+  Button,
+  Dropdown,
+  Menu,
+  Spin
+} from "antd";
 
 import dunSound from "./assets/dun-dun-dun.mp3";
 
@@ -63,6 +72,7 @@ function Canvas({
     width: 0,
     height: 0
   });
+  const [generatingVideo, setGeneratingVideo] = useState<boolean>(false);
 
   const setFocus = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const { top, left } = event.currentTarget.getBoundingClientRect();
@@ -77,6 +87,7 @@ function Canvas({
     if (!animation) {
       return;
     }
+    setGeneratingVideo(true);
     animation.cancel();
     const recorder = recordWebM(
       canvas.current as CanvasWithCaptureStream,
@@ -86,18 +97,22 @@ function Canvas({
     await animation.start(focusPoint!);
     const objectUrl = await recorder.stop();
     download(objectUrl);
+    setGeneratingVideo(false);
   };
 
   const downloadAsGif = async () => {
     if (!animation) {
       return;
     }
+    setGeneratingVideo(true);
+
     animation.cancel();
     const recorder = recordGIF(canvas.current as CanvasWithCaptureStream);
     recorder.start();
     await animation.start(focusPoint!);
     const objectUrl = await recorder.stop();
     download(objectUrl);
+    setGeneratingVideo(false);
   };
 
   /*
@@ -209,12 +224,18 @@ function Canvas({
 
           {!example && (
             <Dropdown
+              disabled={!focusPoint || generatingVideo}
               overlay={
-                <Menu>
-                  <Menu.Item key="2" onClick={() => downloadAsGif()}>
+                <Menu className="menu">
+                  <Menu.Item
+                    className="menu-item"
+                    key="2"
+                    onClick={() => downloadAsGif()}
+                  >
                     GIF
                   </Menu.Item>
                   <Menu.Item
+                    className="menu-item"
                     key="1"
                     onClick={() => downloadAsWebM()}
                     disabled={
@@ -227,7 +248,7 @@ function Canvas({
               }
             >
               <Button className="editor-action" disabled={!focusPoint}>
-                <Icon type="download" />
+                {true ? <Spin className="spinner" /> : <Icon type="download" />}
               </Button>
             </Dropdown>
           )}
