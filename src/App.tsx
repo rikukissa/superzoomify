@@ -175,11 +175,15 @@ function Canvas({
     canvas.current.height = image.height;
 
     const aspectRatio = image.height / image.width;
-
-    const canvasWidth = canvas.current.parentElement!.offsetWidth;
-    const canvasHeight = canvasWidth * aspectRatio;
-
-    setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+    if (image.height > image.width) {
+      const canvasHeight = canvas.current.parentElement!.offsetHeight;
+      const canvasWidth = canvasHeight / aspectRatio;
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+    } else {
+      const canvasWidth = canvas.current.parentElement!.offsetWidth;
+      const canvasHeight = canvasWidth * aspectRatio;
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+    }
   }, [image, canvas]);
 
   return (

@@ -13,24 +13,51 @@ export function superzoom(
 ) {
   const animatedValues = {
     rotation: 0,
-    scale: 1
+    scale: 1,
+    textX: 0,
+    textY: 0,
+    textSize: 0
   };
 
   const animation = anime({
     targets: animatedValues,
     keyframes: [
-      { scale: 1.5, rotation: Math.PI / 6, delay: 100, duration: 400 },
-      { scale: 2, rotation: -Math.PI / 6, duration: 400 },
-      { scale: 3, rotation: Math.PI / 6, duration: 600 },
-      { scale: 3, duration: 2000 }
+      {
+        scale: 1.5,
+        textX: 0,
+        textY: 0.03,
+        textSize: 20,
+        rotation: Math.PI / 6,
+        delay: 100,
+        duration: 400
+      },
+      { textX: 1, textY: 0.03, textSize: 0, duration: 0 },
+      {
+        scale: 2,
+        textX: 1,
+        textY: 0.5,
+        textSize: 30,
+        rotation: -Math.PI / 6,
+        duration: 400
+      },
+      { textX: 0, textY: 0.75, textSize: 0, duration: 0 },
+      {
+        scale: 3,
+        textX: 0,
+        textY: 1,
+        textSize: 40,
+        rotation: Math.PI / 6,
+        duration: 600
+      },
+      { scale: 3, textX: 0, textY: 1, textSize: 40, duration: 2000 }
     ],
     easing: "easeOutElastic(1, .8)",
     autoplay: false
   });
 
   function render(focusPoint: IFocusPoint) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
-
     ctx.translate(
       ctx.canvas.width * focusPoint.x,
       ctx.canvas.height * focusPoint.y
@@ -43,6 +70,14 @@ export function superzoom(
     );
     drawImage(ctx, image, canvasDimensions);
     ctx.restore();
+    ctx.font = animatedValues.textSize + "px Verdana";
+    ctx.fillStyle = "#fff";
+
+    ctx.fillText(
+      "DUN",
+      40 + (ctx.canvas.width - 150) * animatedValues.textX,
+      40 + (ctx.canvas.height - 80) * animatedValues.textY
+    );
   }
 
   const run = (focusPoint: IFocusPoint) => {
