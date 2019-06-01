@@ -29,7 +29,7 @@ export function recordWebM(
 
   source.connect(gainNode);
   gainNode.connect(dest);
-  gainNode.gain.value = 0.1;
+  gainNode.gain.value = 0.3;
 
   dest.stream.getAudioTracks().forEach(track => {
     stream.addTrack(track);
@@ -42,6 +42,7 @@ export function recordWebM(
 
   return {
     start: () => {
+      audio.currentTime = 0;
       audio.play();
       rec.start();
     },
