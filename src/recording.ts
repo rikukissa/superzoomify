@@ -9,6 +9,7 @@ export type AudioWithCaptureStream = HTMLAudioElement & {
 
 export interface Recorder {
   stop: () => Promise<string>;
+  start: () => void;
 }
 
 export function recordWebM(
@@ -18,21 +19,32 @@ export function recordWebM(
   const chunks: BlobPart[] = []; // here we will store our recorded media chunks (Blobs)
   const stream = canvas.captureStream(); // grab our canvas MediaStream
 
-  audio
-    .captureStream()
-    .getAudioTracks()
-    .forEach(track => {
-      stream.addTrack(track);
-    });
+  /*
+   * Audio stream with controlled volume
+   */
+  const ctx = new AudioContext();
+  const source = ctx.createMediaStreamSource(audio.captureStream());
+  const dest = ctx.createMediaStreamDestination();
+  const gainNode = ctx.createGain();
+
+  source.connect(gainNode);
+  gainNode.connect(dest);
+  gainNode.gain.value = 0.1;
+
+  dest.stream.getAudioTracks().forEach(track => {
+    stream.addTrack(track);
+  });
 
   const rec = new MediaRecorder(stream); // init the recorder
 
-  audio.play();
   // every time the recorder has new data, we will store it in our array
   rec.ondataavailable = e => chunks.push(e.data);
-  rec.start();
 
   return {
+    start: () => {
+      audio.play();
+      rec.start();
+    },
     stop: () => {
       return new Promise<string>((resolve, reject) => {
         rec.onerror = reject;
@@ -66,20 +78,22 @@ export function recordGIF(canvas: CanvasWithCaptureStream): Recorder {
     height: Math.min(400 * aspectRatio, canvas.height)
   });
 
-  const interval = setInterval(() => {
-    offscreenCtx.drawImage(
-      canvas,
-      0,
-      0,
-      offscreenCanvasWidth,
-      offscreenCanvasHeight
-    );
-    gif.addFrame(offscreenCtx, { copy: true, delay: 1000 / 10 });
-  }, 1000 / 10);
-
+  let interval: number;
   return {
+    start: () => {
+      interval = window.setInterval(() => {
+        offscreenCtx.drawImage(
+          canvas,
+          0,
+          0,
+          offscreenCanvasWidth,
+          offscreenCanvasHeight
+        );
+        gif.addFrame(offscreenCtx, { copy: true, delay: 1000 / 10 });
+      }, 1000 / 10);
+    },
     stop: () => {
-      clearInterval(interval);
+      window.clearInterval(interval);
       return new Promise((resolve, reject) => {
         gif.on("finished", function(blob: Blob) {
           resolve(URL.createObjectURL(blob));

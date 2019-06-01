@@ -46,6 +46,7 @@ export function superzoom(
   canvasDimensions: IDimensions
 ) {
   let cancelled = false;
+  let animationFrameHandle: number;
   const animationLenght = 200; // @todo frames, turn to seconds
   const zoomStartFrame = 50;
   const zoomEndFrame = animationLenght / 2;
@@ -100,10 +101,17 @@ export function superzoom(
           return resolve();
         }
         render(frame);
-        window.requestAnimationFrame(() => loop(frame + 1));
+        animationFrameHandle = window.requestAnimationFrame(() =>
+          loop(frame + 1)
+        );
       };
       loop();
     });
+  };
+
+  const start = () => {
+    cancelled = false;
+    return run();
   };
 
   const loop = async () => {
@@ -114,9 +122,10 @@ export function superzoom(
   };
 
   return {
-    run,
+    start,
     loop,
     cancel: () => {
+      window.cancelAnimationFrame(animationFrameHandle);
       cancelled = true;
     }
   };

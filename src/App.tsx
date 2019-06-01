@@ -3,17 +3,17 @@ import useDebounce from "react-use/lib/useDebounce";
 import useLocalStorage from "react-use/lib/useLocalStorage";
 import { Layout, Icon, Input, Tooltip, Button } from "antd";
 import ButtonGroup from "antd/lib/button/button-group";
-import {
-  recordWebM,
-  CanvasWithCaptureStream,
-  AudioWithCaptureStream,
-  recordGIF,
-  Recorder
-} from "./recording";
+
 import dunSound from "./assets/dun-dun-dun.mp3";
 import Title from "antd/lib/typography/Title";
 import { IFocusPoint, superzoom } from "./effects/superzoom";
 import { IDimensions, drawImage } from "./canvas";
+import {
+  recordWebM,
+  CanvasWithCaptureStream,
+  AudioWithCaptureStream,
+  recordGIF
+} from "./recording";
 
 const { Content } = Layout;
 
@@ -42,16 +42,17 @@ function canCaptureStream($canvas: HTMLCanvasElement) {
 
 function Canvas({
   image,
-  onPlay,
-  onVideoAvailable
+  playing
 }: {
+  playing: boolean;
   image: HTMLImageElement;
-  onPlay: () => void;
-  onVideoAvailable: (url: string) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const audio = useRef<HTMLAudioElement>(null);
   const [focusPoint, setFocusPoint] = useState<null | IFocusPoint>(null);
+  const [animation, setAnimation] = useState<null | ReturnType<
+    typeof superzoom
+  >>(null);
   const [canvasDimensions, setCanvasDimensions] = useState<IDimensions>({
     width: 0,
     height: 0
@@ -64,6 +65,33 @@ function Canvas({
     });
   }, []);
 
+  const downloadAsWebM = async () => {
+    if (!animation) {
+      return;
+    }
+    animation.cancel();
+    const recorder = recordWebM(
+      canvas.current as CanvasWithCaptureStream,
+      audio.current as AudioWithCaptureStream
+    );
+    recorder.start();
+    await animation.start();
+    const objectUrl = await recorder.stop();
+    download(objectUrl);
+  };
+
+  const downloadAsGif = async () => {
+    if (!animation) {
+      return;
+    }
+    animation.cancel();
+    const recorder = recordGIF(canvas.current as CanvasWithCaptureStream);
+    recorder.start();
+    await animation.start();
+    const objectUrl = await recorder.stop();
+    download(objectUrl);
+  };
+
   useEffect(() => {
     const $canvas = canvas.current;
     if (!$canvas) {
@@ -75,40 +103,30 @@ function Canvas({
       return;
     }
 
-    drawImage(ctx!, image, canvasDimensions);
+    drawImage(ctx, image, canvasDimensions);
 
-    if (!focusPoint) {
+    if (animation && !playing) {
+      animation.cancel();
+      setAnimation(null);
       return;
     }
 
-    let recorder: Recorder;
-    onPlay();
-    if (canCaptureStream($canvas) && audio.current) {
-      recorder = recordGIF($canvas as CanvasWithCaptureStream);
-      // recorder = recordWebM(
-      //   $canvas as CanvasWithCaptureStream,
-      //   audio.current as AudioWithCaptureStream
-      // );
+    if (!animation && playing && focusPoint) {
+      const nextAnimation = superzoom(ctx, image, focusPoint, canvasDimensions);
+      setAnimation(nextAnimation);
+      nextAnimation.loop();
+      return;
     }
-    const animation = superzoom(ctx, image, focusPoint, canvasDimensions);
-
-    async function animate() {
-      await animation.run();
-      if (recorder) {
-        const videoObjectUrl = await recorder.stop();
-        onVideoAvailable(videoObjectUrl);
-      }
-      animation.loop();
-    }
-
-    animate();
-
     return () => {
-      animation.cancel();
+      if (animation) {
+        animation.cancel();
+      }
     };
-    // eslint-disable-next-line
-  }, [image, canvas, focusPoint, canvasDimensions, audio]);
+  }, [image, canvas, focusPoint, canvasDimensions, animation]);
 
+  /*
+   * Set canvas dimensions
+   */
   useEffect(() => {
     if (!canvas.current) {
       return;
@@ -122,18 +140,44 @@ function Canvas({
   }, [image, canvas]);
 
   return (
-    <div onClick={setFocus} className="preview-container">
-      <canvas
-        origin-clean="false"
-        style={{
-          height: canvasDimensions.height
-        }}
-        className="preview"
-        ref={canvas}
-      />
-      <audio muted ref={audio}>
-        <source src={dunSound} type="audio/mpeg" />
-      </audio>
+    <div>
+      <div onClick={setFocus} className="preview-container">
+        <canvas
+          origin-clean="false"
+          style={{
+            height: canvasDimensions.height
+          }}
+          className="preview"
+          ref={canvas}
+        />
+        <audio ref={audio}>
+          <source src={dunSound} type="audio/mpeg" />
+        </audio>
+      </div>
+      <div className="preview-actions">
+        <ButtonGroup>
+          {!playing && <Button disabled icon="caret-right" />}
+          {playing && <Button icon="pause" />}
+        </ButtonGroup>
+        <ButtonGroup>
+          <Button
+            onClick={() => downloadAsWebM()}
+            disabled={!focusPoint}
+            type="primary"
+            icon="download"
+          >
+            WebM
+          </Button>
+          <Button
+            onClick={() => downloadAsGif()}
+            disabled={!focusPoint}
+            type="primary"
+            icon="download"
+          >
+            Gif
+          </Button>
+        </ButtonGroup>
+      </div>
     </div>
   );
 }
@@ -167,29 +211,7 @@ const App: React.FC = () => {
       <Layout className="layout">
         <Content style={{ padding: "0 1em" }} className="content">
           <div className="box">
-            {image && (
-              <Canvas
-                onVideoAvailable={setVideo}
-                onPlay={() => setPlaying(true)}
-                image={image}
-              />
-            )}
-            {image && (
-              <div className="preview-actions">
-                <ButtonGroup>
-                  {!playing && <Button disabled icon="caret-right" />}
-                  {playing && <Button icon="pause" />}
-                </ButtonGroup>
-                <ButtonGroup>
-                  <Button
-                    onClick={() => video && download(video)}
-                    disabled={!video}
-                    type="primary"
-                    icon="download"
-                  />
-                </ButtonGroup>
-              </div>
-            )}
+            {image && <Canvas playing={true} image={image} />}
 
             {!image && (
               <div>
