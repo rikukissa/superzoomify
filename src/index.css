@@ -23,9 +23,16 @@ body,
   max-width: 550px;
   background: #1f1f1f;
   padding: 2em;
-  margin: 1em auto;
+  margin: 0 auto;
   border-radius: 5px;
   position: relative;
+  flex-grow: 1;
+}
+
+@media (min-width: 500px) {
+  .modal {
+    flex-grow: 0;
+  }
 }
 
 .modal-example {
