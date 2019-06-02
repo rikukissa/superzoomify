@@ -11,7 +11,8 @@ export function superzoom(
   image: HTMLImageElement,
   canvasDimensions: IDimensions
 ) {
-  const fontBaseSize = canvasDimensions.width / 17;
+  const fontBaseSize = Math.max(30, canvasDimensions.width / 17);
+
   const animatedValues = {
     rotation: 0,
     scale: 1,
@@ -43,7 +44,7 @@ export function superzoom(
       },
       { textX: 0, textY: 0.75, textSize: 0, duration: 0 },
       {
-        scale: 3,
+        scale: 5,
         textX: 0,
         textY: 1,
         textSize: fontBaseSize * 1.6,
@@ -51,7 +52,7 @@ export function superzoom(
         duration: 600
       },
       {
-        scale: 3,
+        scale: 5,
         textX: 0,
         textY: 1,
         textSize: fontBaseSize * 1.6,
@@ -68,12 +69,14 @@ export function superzoom(
     ctx.textAlign = "center";
 
     ctx.fillText(text, x, y);
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(1, fontBaseSize / 13);
     ctx.strokeText(text, x, y);
   }
 
   function render(focusPoint: IFocusPoint) {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.clearRect(0, 0, image.width, image.height);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, image.width, image.height);
     ctx.save();
     ctx.translate(
       ctx.canvas.width * focusPoint.x,

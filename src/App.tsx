@@ -108,8 +108,9 @@ function Canvas({
     const { top, left } = event.currentTarget.getBoundingClientRect();
 
     setFocusPoint({
-      x: (event.pageX - left) / event.currentTarget.offsetWidth,
-      y: (event.pageY - top) / event.currentTarget.offsetHeight
+      x:
+        (event.pageX - left - window.scrollX) / event.currentTarget.offsetWidth,
+      y: (event.pageY - top - window.scrollY) / event.currentTarget.offsetHeight
     });
   }, []);
 
@@ -226,11 +227,16 @@ function Canvas({
 
     const { offsetWidth, offsetHeight } = canvas.current.parentElement!;
     if (image.height > image.width) {
-      const canvasHeight = offsetHeight;
-      const canvasWidth = canvasHeight / aspectRatio;
+      let canvasHeight = offsetHeight;
+      let canvasWidth = canvasHeight / aspectRatio;
+      if (canvasWidth > offsetWidth) {
+        canvasWidth = offsetWidth;
+        canvasHeight = canvasWidth * aspectRatio;
+      }
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
     } else {
       let canvasWidth = offsetWidth;
+
       let canvasHeight = canvasWidth * aspectRatio;
       if (canvasHeight > offsetHeight) {
         canvasHeight = offsetHeight;
@@ -239,20 +245,24 @@ function Canvas({
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
     }
   }, [image, canvas]);
+  console.log(canvasDimensions);
 
   return (
     <div className="canvas">
       <div className="preview-container">
-        <canvas
-          onClick={setFocus}
-          origin-clean="false"
+        <div
+          className="canvas-container"
           style={{
-            width: canvasDimensions.width,
-            height: canvasDimensions.height
+            paddingTop: `${(image.height / image.width) * 100}%`
           }}
-          className="preview"
-          ref={canvas}
-        />
+        >
+          <canvas
+            onClick={setFocus}
+            origin-clean="false"
+            className="preview"
+            ref={canvas}
+          />
+        </div>
         <audio muted={muted} ref={audio}>
           <source src={dunSound} type="audio/mpeg" />
         </audio>
@@ -438,11 +448,11 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
+      <Title className="title">dun dun dun</Title>
       <Layout className="layout">
         {!image && (
           <Content className="content content--index">
             <div className="modal">
-              <Title className="title">dun dun dun</Title>
               <div className="modal-example">
                 {previewImage && (
                   <Canvas
