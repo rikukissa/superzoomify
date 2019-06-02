@@ -5,8 +5,7 @@ export interface IDimensions {
 
 export function drawImage(
   ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  canvasDimensions: IDimensions
+  image: HTMLImageElement
 ) {
   ctx.drawImage(
     image,

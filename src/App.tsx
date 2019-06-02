@@ -18,7 +18,7 @@ import {
 import dunSound from "./assets/dun-dun-dun.mp3";
 
 import { IFocusPoint, superzoom } from "./effects/superzoom";
-import { IDimensions, drawImage } from "./canvas";
+import { drawImage } from "./canvas";
 import {
   recordWebM,
   CanvasWithCaptureStream,
@@ -94,10 +94,7 @@ function Canvas({
   const [animation, setAnimation] = useState<null | ReturnType<
     typeof superzoom
   >>(null);
-  const [canvasDimensions, setCanvasDimensions] = useState<IDimensions>({
-    width: 0,
-    height: 0
-  });
+
   const [generatingVideo, setGeneratingVideo] = useState<boolean>(false);
 
   const setFocus = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -157,13 +154,20 @@ function Canvas({
       return;
     }
 
-    if (canvasDimensions.width === 0 && canvasDimensions.height === 0) {
+    const ctx = canvas.current.getContext("2d")!;
+    setAnimation(superzoom(ctx, image));
+  }, [animation, canvas, image]);
+
+  /*
+   * Set canvas dimensions
+   */
+  useEffect(() => {
+    if (!canvas.current) {
       return;
     }
-    const ctx = canvas.current.getContext("2d")!;
-
-    setAnimation(superzoom(ctx, image, canvasDimensions));
-  }, [animation, canvas, image, canvasDimensions]);
+    canvas.current.width = image.width;
+    canvas.current.height = image.height;
+  }, [canvas]);
 
   /*
    * Play animation
@@ -187,7 +191,7 @@ function Canvas({
       } catch (error) {
         console.error(error);
       }
-      drawImage(ctx, image, canvasDimensions);
+      drawImage(ctx, image);
       $audio.pause();
     }
     play();
@@ -196,7 +200,7 @@ function Canvas({
         animation.cancel();
       }
     };
-  }, [focusPoint, animation, canvasDimensions, image, audio]);
+  }, [focusPoint, animation, image, audio]);
 
   /*
    * Draw initial image
@@ -212,40 +216,7 @@ function Canvas({
       return;
     }
 
-    drawImage(ctx, image, canvasDimensions);
-  }, [image, canvas, canvasDimensions]);
-
-  /*
-   * Set canvas dimensions
-   */
-  useEffect(() => {
-    if (!canvas.current) {
-      return;
-    }
-    canvas.current.width = image.width;
-    canvas.current.height = image.height;
-
-    const aspectRatio = image.height / image.width;
-
-    const { offsetWidth, offsetHeight } = canvas.current.parentElement!;
-    if (image.height > image.width) {
-      let canvasHeight = offsetHeight;
-      let canvasWidth = canvasHeight / aspectRatio;
-      if (canvasWidth > offsetWidth) {
-        canvasWidth = offsetWidth;
-        canvasHeight = canvasWidth * aspectRatio;
-      }
-      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-    } else {
-      let canvasWidth = offsetWidth;
-
-      let canvasHeight = canvasWidth * aspectRatio;
-      if (canvasHeight > offsetHeight) {
-        canvasHeight = offsetHeight;
-        canvasWidth = canvasHeight / aspectRatio;
-      }
-      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-    }
+    drawImage(ctx, image);
   }, [image, canvas]);
 
   return (

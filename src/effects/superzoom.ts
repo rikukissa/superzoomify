@@ -1,5 +1,5 @@
 import anime from "animejs";
-import { IDimensions, drawImage } from "../canvas";
+import { drawImage } from "../canvas";
 
 export interface IFocusPoint {
   x: number;
@@ -8,10 +8,9 @@ export interface IFocusPoint {
 
 export function superzoom(
   ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  canvasDimensions: IDimensions
+  image: HTMLImageElement
 ) {
-  const fontBaseSize = Math.max(30, canvasDimensions.width / 17);
+  const fontBaseSize = Math.max(30, image.width / 17);
 
   const animatedValues = {
     rotation: 0,
@@ -88,7 +87,7 @@ export function superzoom(
       ctx.canvas.width * focusPoint.x * -1,
       ctx.canvas.height * focusPoint.y * -1
     );
-    drawImage(ctx, image, canvasDimensions);
+    drawImage(ctx, image);
     ctx.restore();
     drawText(
       "DUN",
