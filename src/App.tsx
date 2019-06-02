@@ -10,7 +10,8 @@ import {
   Dropdown,
   Menu,
   Spin,
-  message
+  message,
+  Alert
 } from "antd";
 
 import dunSound from "./assets/dun-dun-dun.mp3";
@@ -45,6 +46,11 @@ function getImage(imageUrl: string) {
     image.src = imageUrl;
   });
 }
+
+function getImageFallback(imageUrl: string) {
+  return getImage(`https://cors-anywhere.herokuapp.com/${imageUrl}`);
+}
+
 function copyToClipboard(str: string) {
   const el = document.createElement("textarea");
   el.value = str;
@@ -316,8 +322,9 @@ function SharedView() {
   const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
     null
   );
+  const [failed, setFailed] = useState<boolean>(false);
 
-  const imagePath = document.location.pathname
+  const imageUrl = document.location.pathname
     .split("/")
     .slice(3)
     .join("/");
@@ -329,7 +336,14 @@ function SharedView() {
 
   useEffect(() => {
     async function loadPreviewImage() {
-      setPreviewImage(await getImage(imagePath));
+      try {
+        const image = await getImage(imageUrl).catch(err =>
+          getImageFallback(imageUrl)
+        );
+        setPreviewImage(image);
+      } catch (error) {
+        setFailed(true);
+      }
     }
     loadPreviewImage();
   }, []);
@@ -345,7 +359,31 @@ function SharedView() {
             image={previewImage}
           />
         ) : (
-          <Spin />
+          <div className="shared-state-container">
+            {failed ? (
+              <Alert
+                className="alert"
+                message="Failed to load the image 😞"
+                description={
+                  <>
+                    <p>Sorry about this! The URL might be broken 🤷‍</p>
+
+                    <Button
+                      className="button"
+                      onClick={() => {
+                        document.location.href = "/";
+                      }}
+                    >
+                      Back to start
+                    </Button>
+                  </>
+                }
+                type="error"
+              />
+            ) : (
+              <Spin />
+            )}
+          </div>
         )}
       </Layout>
     </div>
@@ -368,8 +406,8 @@ const App: React.FC = () => {
   useEffect(() => {
     async function loadPreviewImage() {
       setPreviewImage(
-        await getImage(
-          "https://cors-anywhere.herokuapp.com/https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg"
+        await getImageFallback(
+          "https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg"
         )
       );
       window.setTimeout(() => setFocusPoint({ x: 0.4, y: 0.4 }), 2000);
@@ -384,7 +422,7 @@ const App: React.FC = () => {
           return;
         }
         const file = await getImage(imageUrl).catch(err =>
-          getImage(`https://cors-anywhere.herokuapp.com/${imageUrl}`)
+          getImageFallback(imageUrl)
         );
         setImage(file);
       }

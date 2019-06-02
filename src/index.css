@@ -47,7 +47,7 @@ body,
 
 input[type="text"] {
   color: #fff;
-  background: transparent;
+  background: #1f1f1f;
 }
 .modal svg {
   fill: #fff;
@@ -174,5 +174,21 @@ h1.title {
 
 .ant-message-notice-content {
   background: #1f1f1f;
+  color: #fff;
+}
+
+.shared-state-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert {
+  background: transparent;
+  color: #fff;
+}
+
+.alert .ant-alert-message {
   color: #fff;
 }
