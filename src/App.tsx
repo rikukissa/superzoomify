@@ -123,6 +123,10 @@ function Canvas({
     if (animation || !canvas.current) {
       return;
     }
+
+    if (canvasDimensions.width === 0 && canvasDimensions.height === 0) {
+      return;
+    }
     const ctx = canvas.current.getContext("2d")!;
 
     setAnimation(superzoom(ctx, image, canvasDimensions));
@@ -144,12 +148,12 @@ function Canvas({
         $audio.currentTime = 0;
         await $audio.play();
       } catch (error) {
-        console.log(error);
+        console.error(error);
       }
       try {
         await animation!.start(focusPoint!);
       } catch (error) {
-        console.log(error);
+        console.error(error);
       }
       drawImage(ctx, image, canvasDimensions);
       $audio.pause();
