@@ -245,7 +245,6 @@ function Canvas({
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
     }
   }, [image, canvas]);
-  console.log(canvasDimensions);
 
   return (
     <div className="canvas">
