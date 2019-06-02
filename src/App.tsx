@@ -11,7 +11,8 @@ import {
   Menu,
   Spin,
   message,
-  Alert
+  Alert,
+  Form
 } from "antd";
 
 import dunSound from "./assets/dun-dun-dun.mp3";
@@ -27,7 +28,8 @@ import {
 import Title from "antd/lib/typography/Title";
 
 const { Content } = Layout;
-
+const EXAMPLE_IMAGE =
+  "https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg";
 function download(uri: string) {
   const link = document.createElement("a");
   link.download = "superzoom";
@@ -262,64 +264,64 @@ function Canvas({
             ref={canvas}
           />
         </div>
-        <audio muted={muted} ref={audio}>
-          <source src={dunSound} type="audio/mpeg" />
-        </audio>
-        <div className="preview-actions">
-          <Button className="editor-action" onClick={() => setMuted(!muted)}>
-            <Icon type="sound" theme={muted ? "outlined" : "filled"} />
-          </Button>
+      </div>
+      <audio muted={muted} ref={audio}>
+        <source src={dunSound} type="audio/mpeg" />
+      </audio>
+      <div className="preview-actions">
+        <Button className="editor-action" onClick={() => setMuted(!muted)}>
+          <Icon type="sound" theme={muted ? "outlined" : "filled"} />
+        </Button>
 
-          {showSharingControls && (
-            <div className="share">
-              {focusPoint && (
-                <>
-                  Share:
-                  <Input
-                    onClick={() => {
-                      copyToClipboard(getShareLink(image.src, focusPoint));
-                      message.info("Copied to clipboard");
-                    }}
-                    className="input"
-                    value={getShareLink(image.src, focusPoint)}
-                  />
-                </>
-              )}
-              <Dropdown
-                disabled={!focusPoint || generatingVideo}
-                overlay={
-                  <Menu className="menu">
-                    <Menu.Item
-                      className="menu-item"
-                      key="2"
-                      onClick={() => downloadAsGif()}
-                    >
-                      GIF
-                    </Menu.Item>
-                    <Menu.Item
-                      className="menu-item"
-                      key="1"
-                      onClick={() => downloadAsWebM()}
-                      disabled={
-                        !canvas.current || !canCaptureStream(canvas.current)
-                      }
-                    >
-                      WebM
-                    </Menu.Item>
-                  </Menu>
-                }
-              >
-                <Button className="editor-action" disabled={!focusPoint}>
-                  {generatingVideo ? (
-                    <Spin className="spinner" />
-                  ) : (
-                    <Icon type="download" />
-                  )}
-                </Button>
-              </Dropdown>
-            </div>
-          )}
-        </div>
+        {showSharingControls && (
+          <div className="share">
+            {focusPoint && (
+              <>
+                Share:
+                <Input
+                  onClick={() => {
+                    copyToClipboard(getShareLink(image.src, focusPoint));
+                    message.info("Copied to clipboard");
+                  }}
+                  className="input"
+                  value={getShareLink(image.src, focusPoint)}
+                />
+              </>
+            )}
+            <Dropdown
+              disabled={!focusPoint || generatingVideo}
+              overlay={
+                <Menu className="menu">
+                  <Menu.Item
+                    className="menu-item"
+                    key="2"
+                    onClick={() => downloadAsGif()}
+                  >
+                    GIF
+                  </Menu.Item>
+                  <Menu.Item
+                    className="menu-item"
+                    key="1"
+                    onClick={() => downloadAsWebM()}
+                    disabled={
+                      !canvas.current || !canCaptureStream(canvas.current)
+                    }
+                  >
+                    WebM
+                  </Menu.Item>
+                </Menu>
+              }
+            >
+              <Button className="editor-action" disabled={!focusPoint}>
+                {generatingVideo ? (
+                  <Spin className="spinner" />
+                ) : (
+                  <Icon type="download" />
+                )}
+              </Button>
+            </Dropdown>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -413,11 +415,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     async function loadPreviewImage() {
-      setPreviewImage(
-        await getImageFallback(
-          "https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg"
-        )
-      );
+      setPreviewImage(await getImageFallback(EXAMPLE_IMAGE));
       window.setTimeout(() => setFocusPoint({ x: 0.4, y: 0.4 }), 2000);
     }
     loadPreviewImage();
@@ -461,24 +459,48 @@ const App: React.FC = () => {
                   />
                 )}
               </div>
-              <Input
-                onChange={event => setImageUrl(event.target.value)}
-                placeholder="Enter image URL"
-                className="input"
-                suffix={
-                  <Tooltip title="Extra information">
-                    <Icon
-                      type="info-circle"
-                      style={{ color: "rgba(0,0,0,.45)" }}
-                    />
-                  </Tooltip>
-                }
-              />
+              <Form className="file-form" layout="inline">
+                <Form.Item
+                  help={
+                    <>
+                      Or try out the{" "}
+                      <button
+                        className="link"
+                        onClick={() => setImageUrl(EXAMPLE_IMAGE)}
+                      >
+                        example
+                      </button>
+                      .
+                    </>
+                  }
+                  className="form-item file-form__input-wrapper"
+                >
+                  <Input
+                    className="input file-form__input"
+                    onChange={event => setImageUrl(event.target.value)}
+                    placeholder="Enter image URL"
+                    suffix={
+                      <Tooltip title="Extra information">
+                        <Icon
+                          type="info-circle"
+                          style={{ color: "rgba(0,0,0,.45)" }}
+                        />
+                      </Tooltip>
+                    }
+                  />
+                </Form.Item>
+                <Form.Item>
+                  <Button className="button" type="primary">
+                    Submit
+                  </Button>
+                </Form.Item>
+              </Form>
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                Pellentesque non elit et felis imperdiet ultricies nec quis
-                felis. Cras id purus quis leo rhoncus blandit. Morbi feugiat
-                justo ac placerat suscipit.
+                Enter an image url, click anywhere on the image once it's loaded
+                and your image is now turned into a 'dun dun dun' animation. For
+                uploading an image from your file system, please first upload if
+                to <a href="https://imgur.com/">Imgur</a> or some other image
+                hosting service.
               </p>
             </div>
           </Content>

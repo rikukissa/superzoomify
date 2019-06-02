@@ -137,6 +137,7 @@ h1.title {
   justify-content: center;
   align-items: center;
   height: 100%;
+  max-width: 700px;
 }
 
 .preview-actions {
@@ -163,6 +164,9 @@ h1.title {
 
 .canvas {
   flex-grow: 1;
+  justify-content: center;
+  display: flex;
+  position: relative;
 }
 .canvas-container {
   width: 100%;
@@ -202,4 +206,31 @@ h1.title {
 
 .alert .ant-alert-message {
   color: #fff;
+}
+
+.file-form {
+  display: flex;
+}
+
+.file-form .ant-form-item-control-wrapper {
+  width: 100%;
+}
+
+.file-form__input-wrapper {
+  flex-grow: 1;
+}
+
+.form-item .ant-form-explain {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.form-item.ant-form-item-with-help {
+  margin-bottom: 0;
+}
+
+.link {
+  color: #1890ff;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
