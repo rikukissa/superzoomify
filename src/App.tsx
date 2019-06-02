@@ -248,7 +248,11 @@ function Canvas({
               }
             >
               <Button className="editor-action" disabled={!focusPoint}>
-                {true ? <Spin className="spinner" /> : <Icon type="download" />}
+                {generatingVideo ? (
+                  <Spin className="spinner" />
+                ) : (
+                  <Icon type="download" />
+                )}
               </Button>
             </Dropdown>
           )}
