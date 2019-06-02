@@ -157,6 +157,8 @@ h1.title {
 .share {
   display: flex;
   align-items: center;
+  color: #fff;
+  font-weight: bold;
 }
 .share input {
   margin: 0 1em;
