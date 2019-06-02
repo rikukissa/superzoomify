@@ -174,12 +174,11 @@ function Canvas({
 
     async function play() {
       const $audio = audio.current!;
-      try {
+      if (!muted) {
         $audio.currentTime = 0;
         await $audio.play();
-      } catch (error) {
-        console.error(error);
       }
+
       try {
         await animation!.start(focusPoint!);
       } catch (error) {
