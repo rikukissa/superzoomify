@@ -9,7 +9,8 @@ import {
   Button,
   Dropdown,
   Menu,
-  Spin
+  Spin,
+  message
 } from "antd";
 
 import dunSound from "./assets/dun-dun-dun.mp3";
@@ -44,18 +45,35 @@ function getImage(imageUrl: string) {
     image.src = imageUrl;
   });
 }
+function copyToClipboard(str: string) {
+  const el = document.createElement("textarea");
+  el.value = str;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
 
 function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
 }
 
+function getShareLink(imageUrl: string, focusPoint: IFocusPoint) {
+  const { location } = window.document;
+  return `${location.protocol}//${location.host}/i/${focusPoint.x}x${
+    focusPoint.y
+  }/${encodeURI(imageUrl)}`;
+}
+
 function Canvas({
   image,
-  example,
+  showSharingControls = true,
+  canReFocus = true,
   focusPoint: userDefinedFocusPoint
 }: {
   image: HTMLImageElement;
-  example?: boolean;
+  canReFocus?: boolean;
+  showSharingControls?: boolean;
   focusPoint?: IFocusPoint;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -75,6 +93,12 @@ function Canvas({
   const [generatingVideo, setGeneratingVideo] = useState<boolean>(false);
 
   const setFocus = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canReFocus && focusPoint) {
+      // Only restart animation
+      setFocusPoint({ ...focusPoint });
+      return;
+    }
+
     const { top, left } = event.currentTarget.getBoundingClientRect();
 
     setFocusPoint({
@@ -194,13 +218,19 @@ function Canvas({
     canvas.current.height = image.height;
 
     const aspectRatio = image.height / image.width;
+
+    const { offsetWidth, offsetHeight } = canvas.current.parentElement!;
     if (image.height > image.width) {
-      const canvasHeight = canvas.current.parentElement!.offsetHeight;
+      const canvasHeight = offsetHeight;
       const canvasWidth = canvasHeight / aspectRatio;
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
     } else {
-      const canvasWidth = canvas.current.parentElement!.offsetWidth;
-      const canvasHeight = canvasWidth * aspectRatio;
+      let canvasWidth = offsetWidth;
+      let canvasHeight = canvasWidth * aspectRatio;
+      if (canvasHeight > offsetHeight) {
+        canvasHeight = offsetHeight;
+        canvasWidth = canvasHeight / aspectRatio;
+      }
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
     }
   }, [image, canvas]);
@@ -226,39 +256,54 @@ function Canvas({
             <Icon type="sound" theme={muted ? "outlined" : "filled"} />
           </Button>
 
-          {!example && (
-            <Dropdown
-              disabled={!focusPoint || generatingVideo}
-              overlay={
-                <Menu className="menu">
-                  <Menu.Item
-                    className="menu-item"
-                    key="2"
-                    onClick={() => downloadAsGif()}
-                  >
-                    GIF
-                  </Menu.Item>
-                  <Menu.Item
-                    className="menu-item"
-                    key="1"
-                    onClick={() => downloadAsWebM()}
-                    disabled={
-                      !canvas.current || !canCaptureStream(canvas.current)
-                    }
-                  >
-                    WebM
-                  </Menu.Item>
-                </Menu>
-              }
-            >
-              <Button className="editor-action" disabled={!focusPoint}>
-                {generatingVideo ? (
-                  <Spin className="spinner" />
-                ) : (
-                  <Icon type="download" />
-                )}
-              </Button>
-            </Dropdown>
+          {showSharingControls && (
+            <div className="share">
+              {focusPoint && (
+                <>
+                  Share:
+                  <Input
+                    onClick={() => {
+                      copyToClipboard(getShareLink(image.src, focusPoint));
+                      message.info("Copied to clipboard");
+                    }}
+                    className="input"
+                    value={getShareLink(image.src, focusPoint)}
+                  />
+                </>
+              )}
+              <Dropdown
+                disabled={!focusPoint || generatingVideo}
+                overlay={
+                  <Menu className="menu">
+                    <Menu.Item
+                      className="menu-item"
+                      key="2"
+                      onClick={() => downloadAsGif()}
+                    >
+                      GIF
+                    </Menu.Item>
+                    <Menu.Item
+                      className="menu-item"
+                      key="1"
+                      onClick={() => downloadAsWebM()}
+                      disabled={
+                        !canvas.current || !canCaptureStream(canvas.current)
+                      }
+                    >
+                      WebM
+                    </Menu.Item>
+                  </Menu>
+                }
+              >
+                <Button className="editor-action" disabled={!focusPoint}>
+                  {generatingVideo ? (
+                    <Spin className="spinner" />
+                  ) : (
+                    <Icon type="download" />
+                  )}
+                </Button>
+              </Dropdown>
+            </div>
           )}
         </div>
       </div>
@@ -266,11 +311,49 @@ function Canvas({
   );
 }
 
-const App: React.FC = () => {
-  const [imageUrl, setImageUrl] = useLocalStorage<string | null>(
-    "superzoomify",
+function SharedView() {
+  const [focusSpot] = document.location.pathname.split("/").slice(2);
+  const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
     null
   );
+
+  const imagePath = document.location.pathname
+    .split("/")
+    .slice(3)
+    .join("/");
+
+  const focusPoint = {
+    x: parseFloat(focusSpot.split("x")[0]),
+    y: parseFloat(focusSpot.split("x")[1])
+  };
+
+  useEffect(() => {
+    async function loadPreviewImage() {
+      setPreviewImage(await getImage(imagePath));
+    }
+    loadPreviewImage();
+  }, []);
+
+  return (
+    <div className="App">
+      <Layout className="layout">
+        {previewImage ? (
+          <Canvas
+            showSharingControls={false}
+            canReFocus={false}
+            focusPoint={focusPoint}
+            image={previewImage}
+          />
+        ) : (
+          <Spin />
+        )}
+      </Layout>
+    </div>
+  );
+}
+
+const App: React.FC = () => {
+  const [imageUrl, setImageUrl] = useState<string>();
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [focusPoint, setFocusPoint] = useState<IFocusPoint>();
   const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
@@ -278,7 +361,7 @@ const App: React.FC = () => {
   );
 
   function clearImage() {
-    setImageUrl(null);
+    setImageUrl(undefined);
     setImage(null);
   }
 
@@ -311,6 +394,11 @@ const App: React.FC = () => {
     [imageUrl]
   );
 
+  const isShared = document.location.pathname.indexOf("/i/") === 0;
+  if (isShared) {
+    return <SharedView />;
+  }
+
   return (
     <div className="App">
       <Layout className="layout">
@@ -321,7 +409,7 @@ const App: React.FC = () => {
               <div className="modal-example">
                 {previewImage && (
                   <Canvas
-                    example={true}
+                    showSharingControls={false}
                     image={previewImage}
                     focusPoint={focusPoint}
                   />

@@ -15,6 +15,10 @@ body,
   height: 100%;
 }
 
+.layout {
+  background-color: #110d15;
+}
+
 .modal {
   width: 550px;
   background: #1f1f1f;
@@ -25,12 +29,13 @@ body,
 }
 
 .modal-example {
+  height: 420px;
   margin-left: -2em;
   margin-right: -2em;
   margin-top: -2em;
   margin-bottom: 2em;
   border-radius: 5px 5px 0 0;
-  overflow: hidden;
+  display: flex;
 }
 
 .example {
@@ -40,7 +45,7 @@ body,
   display: block;
 }
 
-.modal input {
+input[type="text"] {
   color: #fff;
   background: transparent;
 }
@@ -55,29 +60,17 @@ body,
 h1.title {
   font-size: 13px;
   color: #fff;
-  position: relative;
   text-transform: lowercase;
   position: absolute;
   z-index: 1;
   top: 1em;
   left: 1em;
-}
-
-h1.title:after {
-  z-index: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: #453a51;
-  background-clip: text;
-  text-shadow: none;
-  content: attr(data-text);
+  text-shadow: 0px 0px 4px #000;
 }
 
 .content {
   display: flex;
   flex-direction: column;
-  background-color: #110d15;
 }
 
 .content--index {
@@ -140,16 +133,6 @@ h1.title:after {
   background: #1f1f1f;
 }
 
-.modal .preview-container:after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-}
-
 .preview-container {
   position: relative;
   cursor: crosshair;
@@ -168,7 +151,16 @@ h1.title:after {
   padding: 1em;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   z-index: 2;
+}
+.share {
+  display: flex;
+  align-items: center;
+}
+.share input {
+  margin: 0 1em;
+  max-width: 400px;
 }
 
 .preview {
@@ -177,5 +169,10 @@ h1.title:after {
 
 .button {
   background: transparent !important;
+  color: #fff;
+}
+
+.ant-message-notice-content {
+  background: #1f1f1f;
   color: #fff;
 }
