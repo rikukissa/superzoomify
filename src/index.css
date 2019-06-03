@@ -253,3 +253,14 @@ h1.title {
 .input .ant-spin {
   margin-top: 3px;
 }
+.footer-link {
+  position: absolute;
+  bottom: 1em;
+  right: 1.5em;
+  z-index: 2;
+}
+
+.footer-link a {
+  color: #fff;
+  font-family: Rubik;
+}

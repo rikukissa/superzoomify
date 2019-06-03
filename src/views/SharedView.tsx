@@ -73,6 +73,9 @@ export function SharedView() {
           </div>
         )}
       </Layout>
+      <div className="footer-link">
+        <a href="https://dundundun.netlify.com">DUN DUN DUN</a>
+      </div>
     </div>
   );
 }
