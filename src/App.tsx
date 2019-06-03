@@ -128,7 +128,7 @@ const App: React.FC = () => {
               </Form>
               <p>
                 Enter an image url, click anywhere on the image once it's loaded
-                and your image is now turned into a 'dun dun dun' animation. For
+                and your image is now turned into a 'DUN DUN DUN' animation. For
                 uploading an image from your file system, please first upload it
                 to <a href="https://imgur.com/">Imgur</a> or some other image
                 hosting service.
