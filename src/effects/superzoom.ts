@@ -63,8 +63,9 @@ export function superzoom(
   });
 
   function drawText(text: string, x: number, y: number) {
-    ctx.font = `bold ${animatedValues.textSize}px Arial`;
+    ctx.font = `bold ${animatedValues.textSize}px Rubik`;
     ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#0a0a0e";
     ctx.textAlign = "center";
 
     ctx.fillText(text, x, y);

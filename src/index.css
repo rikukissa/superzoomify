@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css?family=Rubik:700&display=swap");
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -16,7 +18,7 @@ body,
 }
 
 .layout {
-  background-color: #110d15;
+  background-color: #292c3b;
 }
 
 .modal {
@@ -36,6 +38,7 @@ body,
 }
 
 .modal-example {
+  overflow: hidden;
   margin-left: -2em;
   margin-right: -2em;
   margin-top: -2em;
@@ -63,10 +66,18 @@ input[type="text"] {
 }
 
 h1.title {
-  color: transparent;
-  position: absolute;
-  top: 1em;
-  left: 1em;
+  text-align: center;
+  font-family: "Rubik", sans-serif;
+  color: #89cf83;
+  font-size: 50px;
+  margin-bottom: 0;
+}
+
+.title + strong {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 1em;
+  display: block;
 }
 
 .content {

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import useDebounce from "react-use/lib/useDebounce";
 import { Layout, Icon, Input, Tooltip, Button, Form, Spin } from "antd";
 
 import { IFocusPoint } from "./effects/superzoom";
@@ -85,7 +84,6 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
-      <Title className="title">dun dun dun</Title>
       <Layout className="layout">
         {!image && (
           <Content className="content content--index">
@@ -99,6 +97,8 @@ const App: React.FC = () => {
                   />
                 )}
               </div>
+              <Title className="title">DUN DUN DUN!</Title>
+              <strong>Make it more dramatic!</strong>
               <Form className="file-form" layout="inline" onSubmit={submitForm}>
                 <Form.Item
                   help={
