@@ -38,7 +38,36 @@ export function canCaptureStream($canvas: HTMLCanvasElement) {
 
 export function getShareLink(imageUrl: string, focusPoint: IFocusPoint) {
   const { location } = window.document;
-  return `${location.protocol}//${location.host}/i/${focusPoint.x}x${
+  return `${location.protocol}//${location.host}/i/?f=${focusPoint.x}x${
     focusPoint.y
-  }/${encodeURI(imageUrl)}`;
+  }&u=${encodeURI(imageUrl)}`;
+}
+
+function parseQuery(queryString: string) {
+  const query: { [key: string]: string } = {};
+  const pairs = (queryString[0] === "?"
+    ? queryString.substr(1)
+    : queryString
+  ).split("&");
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i].split("=");
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+  }
+  return query;
+}
+
+export function parseShareLink(search: string) {
+  const query = parseQuery(search);
+
+  const focus = query.f || "";
+  const imageUrl = query.u || "";
+
+  const [x, y] = focus.split("x");
+
+  const focusPoint = {
+    x: parseFloat(x),
+    y: parseFloat(y)
+  };
+
+  return { imageUrl, focusPoint };
 }

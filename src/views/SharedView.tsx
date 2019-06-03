@@ -1,25 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Layout, Button, Spin, Alert } from "antd";
-import { getImage, getImageFallback } from "../util";
+import { getImage, getImageFallback, parseShareLink } from "../util";
 import { Canvas } from "../components/Canvas";
 import { Helmet } from "react-helmet";
 
 export function SharedView() {
-  const [focusSpot] = document.location.pathname.split("/").slice(2);
   const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
     null
   );
   const [failed, setFailed] = useState<boolean>(false);
 
-  const imageUrl = document.location.pathname
-    .split("/")
-    .slice(3)
-    .join("/");
-
-  const focusPoint = {
-    x: parseFloat(focusSpot.split("x")[0]),
-    y: parseFloat(focusSpot.split("x")[1])
-  };
+  const { imageUrl, focusPoint } = parseShareLink(document.location.search);
 
   useEffect(() => {
     async function loadPreviewImage() {

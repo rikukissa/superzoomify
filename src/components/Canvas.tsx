@@ -19,6 +19,8 @@ function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
 }
 
+const round2 = (num: number) => Math.round(num * 100) / 100;
+
 export function Canvas({
   image,
   showSharingControls = true,
@@ -54,12 +56,14 @@ export function Canvas({
       const { top, left } = event.currentTarget.getBoundingClientRect();
 
       setFocusPoint({
-        x:
+        x: round2(
           (event.pageX - left - window.scrollX) /
-          event.currentTarget.offsetWidth,
-        y:
+            event.currentTarget.offsetWidth
+        ),
+        y: round2(
           (event.pageY - top - window.scrollY) /
-          event.currentTarget.offsetHeight
+            event.currentTarget.offsetHeight
+        )
       });
     },
     [canReFocus, focusPoint]
