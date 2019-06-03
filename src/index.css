@@ -264,3 +264,8 @@ h1.title {
   color: #fff;
   font-family: Rubik;
 }
+
+.instruction {
+  color: #fff;
+  margin-top: 1.5em;
+}

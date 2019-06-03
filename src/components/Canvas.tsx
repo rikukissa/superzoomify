@@ -25,10 +25,12 @@ export function Canvas({
   image,
   showSharingControls = true,
   canReFocus = true,
+  showInstruction = true,
   focusPoint: userDefinedFocusPoint
 }: {
   image: HTMLImageElement;
   canReFocus?: boolean;
+  showInstruction?: boolean;
   showSharingControls?: boolean;
   focusPoint?: IFocusPoint;
 }) {
@@ -191,6 +193,11 @@ export function Canvas({
             ref={canvas}
           />
         </div>
+        {showInstruction && (
+          <span className="instruction">
+            Click anywhere on the image to set the focus point 👆
+          </span>
+        )}
       </div>
       <audio muted={muted} ref={audio}>
         <source src={dunSound} type="audio/mpeg" />

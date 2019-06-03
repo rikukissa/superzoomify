@@ -93,6 +93,7 @@ const App: React.FC = () => {
               <div className="modal-example">
                 {previewImage && (
                   <Canvas
+                    showInstruction={false}
                     showSharingControls={false}
                     image={previewImage}
                     focusPoint={focusPoint}
