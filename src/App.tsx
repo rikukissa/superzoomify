@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useDebounce from "react-use/lib/useDebounce";
-import { Layout, Icon, Input, Tooltip, Button, Form } from "antd";
+import { Layout, Icon, Input, Tooltip, Button, Form, Spin } from "antd";
 
 import { IFocusPoint } from "./effects/superzoom";
 
@@ -13,46 +13,74 @@ const { Content } = Layout;
 const EXAMPLE_IMAGE = "https://i.imgur.com/lpNKAwP.jpg";
 
 const App: React.FC = () => {
-  const [imageUrl, setImageUrl] = useState<string>();
+  const [imageUrl, setImageUrl] = useState("");
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [focusPoint, setFocusPoint] = useState<IFocusPoint>();
   const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(
     null
   );
 
+  async function submitImage() {
+    setLoading(true);
+    try {
+      const file = await getImage(imageUrl).catch(err =>
+        getImageFallback(imageUrl)
+      );
+      setImage(file);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      setError(true);
+    }
+  }
+
+  async function submitForm(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submitImage();
+  }
+
+  function useExample() {
+    setImageUrl(EXAMPLE_IMAGE);
+    submitImage();
+  }
+
+  function updateImageUrl(url: string) {
+    setError(false);
+    setImageUrl(url);
+  }
+
   function clearImage() {
-    setImageUrl(undefined);
+    setImageUrl("");
     setImage(null);
   }
 
   useEffect(() => {
     async function loadPreviewImage() {
       setPreviewImage(await getImageFallback(EXAMPLE_IMAGE));
-      window.setTimeout(() => setFocusPoint({ x: 0.4, y: 0.4 }), 2000);
+      window.setTimeout(() => setFocusPoint({ x: 0.4, y: 0.4 }), 1000);
     }
     loadPreviewImage();
   }, []);
 
-  useDebounce(
-    () => {
-      async function loadImage() {
-        if (!imageUrl) {
-          return;
-        }
-        const file = await getImage(imageUrl).catch(err =>
-          getImageFallback(imageUrl)
-        );
-        setImage(file);
-      }
-      loadImage();
-    },
-    1000,
-    [imageUrl]
-  );
-
   const isShared = document.location.pathname.indexOf("/i/") === 0;
   if (isShared) {
     return <SharedView />;
+  }
+
+  let inputSuffix: JSX.Element | null = null;
+
+  if (error) {
+    inputSuffix = (
+      <Tooltip title="This image isn't loading 😞. Check the URL or try to upload it to some other service.">
+        <Icon type="exclamation-circle" className="load-error" />
+      </Tooltip>
+    );
+  }
+
+  if (loading) {
+    inputSuffix = <Spin size="small" />;
   }
 
   return (
@@ -71,15 +99,12 @@ const App: React.FC = () => {
                   />
                 )}
               </div>
-              <Form className="file-form" layout="inline">
+              <Form className="file-form" layout="inline" onSubmit={submitForm}>
                 <Form.Item
                   help={
                     <>
                       Or try out the{" "}
-                      <button
-                        className="link"
-                        onClick={() => setImageUrl(EXAMPLE_IMAGE)}
-                      >
+                      <button className="link" onClick={useExample}>
                         example
                       </button>
                       .
@@ -89,20 +114,14 @@ const App: React.FC = () => {
                 >
                   <Input
                     className="input file-form__input"
-                    onChange={event => setImageUrl(event.target.value)}
+                    value={imageUrl}
+                    onChange={event => updateImageUrl(event.target.value)}
                     placeholder="Enter image URL"
-                    suffix={
-                      <Tooltip title="Extra information">
-                        <Icon
-                          type="info-circle"
-                          style={{ color: "rgba(0,0,0,.45)" }}
-                        />
-                      </Tooltip>
-                    }
+                    suffix={inputSuffix}
                   />
                 </Form.Item>
                 <Form.Item>
-                  <Button className="button" type="primary">
+                  <Button htmlType="submit" className="button" type="primary">
                     Submit
                   </Button>
                 </Form.Item>

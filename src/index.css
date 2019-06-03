@@ -234,3 +234,10 @@ h1.title {
   background: transparent;
   padding: 0;
 }
+.load-error svg {
+  fill: tomato;
+}
+
+.input .ant-spin {
+  margin-top: 3px;
+}
