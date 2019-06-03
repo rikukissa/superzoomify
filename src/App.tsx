@@ -31,6 +31,8 @@ const App: React.FC = () => {
       setLoading(false);
     } catch (error) {
       setLoading(false);
+      console.log(error);
+
       setError(true);
     }
   }
