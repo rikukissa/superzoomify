@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Layout, Button, Spin, Alert } from "antd";
 import { getImage, getImageFallback } from "../util";
 import { Canvas } from "../components/Canvas";
+import { Helmet } from "react-helmet";
 
 export function SharedView() {
   const [focusSpot] = document.location.pathname.split("/").slice(2);
@@ -36,6 +37,10 @@ export function SharedView() {
 
   return (
     <div className="App">
+      <Helmet>
+        <meta property="og:image" content={imageUrl} />
+        <meta property="twitter:image" content={imageUrl} />
+      </Helmet>
       <Layout className="layout">
         {previewImage ? (
           <Canvas
