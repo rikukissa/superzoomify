@@ -10,8 +10,7 @@ import { SharedView } from "./views/SharedView";
 import { Canvas } from "./components/Canvas";
 
 const { Content } = Layout;
-const EXAMPLE_IMAGE =
-  "https://i.kym-cdn.com/photos/images/original/000/000/130/disaster-girl.jpg";
+const EXAMPLE_IMAGE = "https://i.imgur.com/lpNKAwP.jpg";
 
 const App: React.FC = () => {
   const [imageUrl, setImageUrl] = useState<string>();
