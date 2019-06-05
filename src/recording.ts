@@ -62,8 +62,8 @@ export function recordWebM(
 
 export function recordGIF(canvas: CanvasWithCaptureStream): Recorder {
   const aspectRatio = canvas.height / canvas.width;
-  const offscreenCanvasWidth = Math.min(400, canvas.width);
-  const offscreenCanvasHeight = Math.min(400 * aspectRatio, canvas.height);
+  const offscreenCanvasWidth = Math.min(300, canvas.width);
+  const offscreenCanvasHeight = Math.min(300 * aspectRatio, canvas.height);
   const offscreenCanvas = window.document.createElement("canvas");
   offscreenCanvas.width = offscreenCanvasWidth;
   offscreenCanvas.height = offscreenCanvasHeight;
@@ -73,10 +73,9 @@ export function recordGIF(canvas: CanvasWithCaptureStream): Recorder {
   const gif = new GIF({
     workers: 2,
     quality: 8,
-    // width: canvas.width,
-    // height: canvas.height
-    width: Math.min(400, canvas.width),
-    height: Math.min(400 * aspectRatio, canvas.height)
+    workerScript: "/gif.worker.js",
+    width: offscreenCanvasWidth,
+    height: offscreenCanvasHeight
   });
 
   let interval: number;
