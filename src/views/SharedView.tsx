@@ -35,7 +35,8 @@ export function SharedView() {
       <Layout className="layout">
         {previewImage ? (
           <Canvas
-            showSharingControls={false}
+            showInstruction={false}
+            showSharingControls={true}
             canReFocus={false}
             focusPoint={focusPoint}
             image={previewImage}
