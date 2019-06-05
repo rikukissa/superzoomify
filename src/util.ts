@@ -40,7 +40,15 @@ export function getShareLink(imageUrl: string, focusPoint: IFocusPoint) {
   const { location } = window.document;
   return `${location.protocol}//${location.host}/i/?f=${focusPoint.x}x${
     focusPoint.y
-  }&u=${encodeURI(imageUrl)}`;
+  }&u=${encodeURIToWorkwithPrerender(encodeURI(imageUrl))}`;
+}
+
+function encodeURIToWorkwithPrerender(uri: string) {
+  return uri.replace(/\.(png|gif|jpg|jpeg|svg)/g, "!--!$1");
+}
+
+function decodePrerenderEnabledURI(uri: string) {
+  return uri.replace(/!--!(png|gif|jpg|jpeg|svg)/g, ".$1");
 }
 
 function parseQuery(queryString: string) {
@@ -59,15 +67,24 @@ function parseQuery(queryString: string) {
 export function parseShareLink(search: string) {
   const query = parseQuery(search);
 
-  const focus = query.f || "";
-  const imageUrl = query.u || "";
-
-  const [x, y] = focus.split("x");
-
-  const focusPoint = {
-    x: parseFloat(x),
-    y: parseFloat(y)
+  const defaultFocus = {
+    x: 0.5,
+    y: 0.5
   };
+
+  let focusPoint = defaultFocus;
+
+  if (query.f) {
+    const [x, y] = query.f.split("x");
+    focusPoint = {
+      x: parseFloat(x),
+      y: parseFloat(y)
+    };
+  }
+
+  const imageUrl = query.u
+    ? decodePrerenderEnabledURI(decodeURIComponent(query.u))
+    : "";
 
   return { imageUrl, focusPoint };
 }
