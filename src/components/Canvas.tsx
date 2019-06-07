@@ -13,7 +13,8 @@ import {
   AudioWithCaptureStream,
   recordGIF
 } from "../recording";
-import { download, copyToClipboard, getShareLink } from "../util";
+import { download, getShareLink } from "../util";
+import Clipboard from "react-clipboard.js";
 
 function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
@@ -212,14 +213,18 @@ export function Canvas({
             {focusPoint && (
               <>
                 Share:
-                <Input
-                  onClick={() => {
-                    copyToClipboard(getShareLink(image.src, focusPoint));
-                    message.info("Copied to clipboard");
-                  }}
-                  className="input"
-                  value={getShareLink(image.src, focusPoint)}
-                />
+                <Clipboard
+                  className="share-input"
+                  component="div"
+                  data-clipboard-text={getShareLink(image.src, focusPoint)}
+                  onSuccess={() => message.info("Copied to clipboard")}
+                >
+                  <Input
+                    className="input"
+                    value={getShareLink(image.src, focusPoint)}
+                    readOnly
+                  />
+                </Clipboard>
               </>
             )}
             <Dropdown

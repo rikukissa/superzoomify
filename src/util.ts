@@ -23,15 +23,6 @@ export function getImageFallback(imageUrl: string) {
   return getImage(`https://cors-anywhere.herokuapp.com/${imageUrl}`);
 }
 
-export function copyToClipboard(str: string) {
-  const el = document.createElement("textarea");
-  el.value = str;
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand("copy");
-  document.body.removeChild(el);
-}
-
 export function canCaptureStream($canvas: HTMLCanvasElement) {
   return Boolean(($canvas as any).captureStream);
 }
